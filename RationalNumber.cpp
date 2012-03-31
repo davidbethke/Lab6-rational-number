@@ -17,6 +17,8 @@ ostream& operator<<( ostream& os, const RationalNumber& rn)
 {
 	if(rn.denom ==1)
 		cout<< rn.num;
+	else if((rn.num<0)&&(rn.denom<0))
+		cout <<abs(rn.num)<<"/"<<abs(rn.denom);
 	else if(rn.num<0 || rn.denom <0) //negative
 		cout <<"-"<<abs(rn.num)<<"/"<<abs(rn.denom);
 	else 
