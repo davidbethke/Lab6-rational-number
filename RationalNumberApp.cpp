@@ -29,7 +29,7 @@ int getMyNum(istream& is,char delim,bool allowWS=false)  // deliminator is '/' o
 			if(!isIntChar(c))
 			{
 				if( allowWS && isWhiteSpaceChar(c))
-					; // skip ignore is WS is allowed w/in the number, 12 3/456 => 123/456
+					;//cout << "Got intra ws"; // skip ignore is WS is allowed w/in the number, 12 3/456 => 123/456
 				else
 				{
 					is.ignore(256,delim); // fails for >256 chars, okay by me
@@ -38,8 +38,10 @@ int getMyNum(istream& is,char delim,bool allowWS=false)  // deliminator is '/' o
 				
 			}
 			else
+			{
 				(!foundFirst?foundFirst=true:foundFirst=true);
 				ss<<c;
+			}
 		}
 		ss>> myNum;
 		is.clear();
@@ -79,7 +81,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		cout << "Enter rational number:";
 
 		num=getMyNum(cin,divideBy,true);
-		denom=getMyNum(cin,newline);
+		denom=getMyNum(cin,newline,true);
 		cout <<"Num:"<<num;
 		cout <<"Denom:"<<denom;
 
