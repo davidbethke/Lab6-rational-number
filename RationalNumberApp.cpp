@@ -12,6 +12,7 @@ using namespace std;
 bool isIntChar(char );
 bool isWhiteSpaceChar(char);
 bool delimFound(char,char);
+const char sysEOL='\n';
 int getMyNum(istream& is,char delim,bool & emptyFlag,bool & delimFlag,bool allowWS=false)  // deliminator is '/' or '\n' 
 {
 	stringstream ss;
@@ -20,7 +21,7 @@ int getMyNum(istream& is,char delim,bool & emptyFlag,bool & delimFlag,bool allow
 	char c='0';
 	int myNum=-99;
 	is>>ws;  // built in skip leading whitespace
-	while(is.get(c) &&  !(delimFlag=delimFound(c,delim))&& (c!='\n'))//c!=delim)
+	while(is.get(c) &&  !(delimFlag=delimFound(c,delim))&& (c!=sysEOL))//c!=delim)
 		{
 			if((!foundFirst)&& c=='-') //check for a leading negative
 			{
@@ -50,12 +51,12 @@ int getMyNum(istream& is,char delim,bool & emptyFlag,bool & delimFlag,bool allow
 	ss.seekg(0,ios::end);
 	int size=ss.tellg();
 	ss.seekg(0,ios::beg);
-	std::cout <<"count:"<<size;
-	std::cout <<"ssize:"<<ss.str().size();
+	//std::cout <<"count:"<<size;
+	//std::cout <<"ssize:"<<ss.str().size();
 	if( size==0 ||(size=1 && ss.str()=="-")) // check for empty, or single '-'
 	{
 		emptyFlag=true;
-		std::cout << "empty value";
+		//std::cout << "empty value";
 	}
 		ss>> myNum;
 		
@@ -80,33 +81,59 @@ bool delimFound(char c,char d)
 {
 	return (c==d);
 }
-void setSkipWs(istream& is)
-{
-	//is.setf(ios::skipws);
-	is>>ws; // built in function
-}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
-	//ifstream myFile("\goodFile.txt");
+	ifstream myFile("\good_input.txt");
+	if(!myFile)
+	{
+		cout << "Failed to open file";
+		getchar();
+		exit(1);
+	}
 	int num=0, denom=1;
 	char c='\n';
-	bool emptyFlag=false;
-	bool delimFlag=false;
+	bool emptyFlagNum=false;
+	bool delimFlagNum=false;
+	bool emptyFlagDenom=false;
+	bool delimFlagDenom=false;
 	bool allowWS=true;
-	while(c!='n' || (!cin))
+	//while(c!='n' || (!cin))
+
+	while(myFile.get(c))
 	{
+		myFile.putback(c); //determine end of file w/ myFile.get(c), decrement get c
 		char divideBy='/';
 		char newline='\n';
-		cin.ignore(256,'\n');
+		//cin.ignore(256,'\n');
 		
-		cout << "Enter rational number:";
+		//cout << "Enter rational number:";
+		try
+		{
+			num=getMyNum(myFile,divideBy,emptyFlagNum,delimFlagNum,allowWS);
+			denom=getMyNum(myFile,newline,emptyFlagDenom,delimFlagDenom,allowWS);
+			if(!denom)
+				throw runtime_error("Denominator=0");
+			// check empty
+			if((emptyFlagNum && emptyFlagDenom)|| (emptyFlagNum&& !emptyFlagDenom)) //empty can't recover
+				throw runtime_error("Empty error");
+			else if ((!emptyFlagNum&& emptyFlagDenom)&&!delimFlagNum)  //num good, no /,denom missing, single digit? 7 valid, 7/ not valid
+				denom=1; //set denom to 1, should print correctly
+			else
+				cout <<"Rational Number:"<< RationalNumber(num,denom)<<endl;
 
-		num=getMyNum(cin,divideBy,emptyFlag,delimFlag,allowWS);
-		denom=getMyNum(cin,newline,emptyFlag,delimFlag,allowWS);
+		/*
 		cout <<"Num:"<<num;
 		cout <<"Denom:"<<denom;
 		cout <<endl<< "continue (y/n)"<<endl;
 		cin.get(c);
+		*/
+			getchar();
+		}
+		catch(exception & e)
+		{
+			cout <<"exception caught"<<e.what()<<endl;
+		}
 		
 	}
 	
@@ -131,7 +158,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << "Myint:"<<myint;
 
 	cout << "Myint2:"<<myint;
-	getchar();
+	
 	getchar();
 	return 0;
 }
