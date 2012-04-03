@@ -7,6 +7,29 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+//////////////////////////
+//    Flag Combinations
+//////////////////////////
+// Empty Flags
+//    Num	Denom	Result
+//		t		t	throw empty exception
+//		t		f	throw empty exception
+//		f		t	see delimFlag table
+//		f		f	normal
+////////////////////////////////////
+// Delim Flags
+//    Num	Denom	Result
+//		t		t	normal
+//		t		f	
+//		f		t	
+//		f		f
+///////////////////////////////////////
+// allowWS
+// defaults to false, do not allow intra number spaces, ie 12 3 != 123 invalid
+// set to true to allow intra number spaces				ie 12 3  = 123 valid
+/////////////////////////////////////////
+//  const char sysEOL set to system end of line char
+
 
 using namespace std;
 bool isIntChar(char );
@@ -59,8 +82,12 @@ int getMyNum(istream& is,char delim,bool & emptyFlag,bool & delimFlag,bool allow
 		//std::cout << "empty value";
 	}
 		ss>> myNum;
+	// crazy put a \n if the delim is \n and it was stripped out failbit, causes fallover to next line
+	//if(delim==sysEOL&& is.fail())// does ignore w/ delim='/' strip '\n'?
+	if(is.fail())// does ignore w/ delim='/' strip '\n'?
+		is.putback(sysEOL);
 		
-		is.clear();
+	is.clear();
 		//is.ignore(256,delim); //clear
 	return myNum;
 }
@@ -84,7 +111,7 @@ bool delimFound(char c,char d)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	ifstream myFile("\good_input.txt");
+	ifstream myFile("\good_input2.txt");
 	if(!myFile)
 	{
 		cout << "Failed to open file";
@@ -97,7 +124,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	bool delimFlagNum=false;
 	bool emptyFlagDenom=false;
 	bool delimFlagDenom=false;
-	bool allowWS=true;
+	bool allowWS=false;
 	//while(c!='n' || (!cin))
 
 	while(myFile.get(c))
@@ -114,13 +141,26 @@ int _tmain(int argc, _TCHAR* argv[])
 			denom=getMyNum(myFile,newline,emptyFlagDenom,delimFlagDenom,allowWS);
 			if(!denom)
 				throw runtime_error("Denominator=0");
-			// check empty
-			if((emptyFlagNum && emptyFlagDenom)|| (emptyFlagNum&& !emptyFlagDenom)) //empty can't recover
+			// check empty Flag conditions
+			if((emptyFlagNum && emptyFlagDenom)|| (emptyFlagNum&& !emptyFlagDenom)||
+				(!emptyFlagNum&&emptyFlagDenom&&(delimFlagNum&&!delimFlagDenom))) //empty can't recover
+			{
+				cout <<"Num:"<<num<<" "<<"Denom:"<<denom<<endl;
 				throw runtime_error("Empty error");
-			else if ((!emptyFlagNum&& emptyFlagDenom)&&!delimFlagNum)  //num good, no /,denom missing, single digit? 7 valid, 7/ not valid
+			}
+			else if ((!emptyFlagNum&& emptyFlagDenom)&&!delimFlagNum&&!delimFlagDenom)  //num good, no /,denom missing, single digit? 7 valid, 7/ not valid
+			{
 				denom=1; //set denom to 1, should print correctly
-			else
+				cout<<"numDelim:"<<delimFlagNum<<"denomDelim:"<<delimFlagDenom<<endl;
+				cout<<"numEmpty:"<<emptyFlagNum<<"denomEmpty:"<<emptyFlagDenom<<endl;
 				cout <<"Rational Number:"<< RationalNumber(num,denom)<<endl;
+			}
+			else
+			{
+				cout<<"numDelim:"<<delimFlagNum<<"denomDelim:"<<delimFlagDenom<<endl;
+				cout<<"numEmpty:"<<emptyFlagNum<<"denomEmpty:"<<emptyFlagDenom<<endl;
+				cout <<"Rational Number:"<< RationalNumber(num,denom)<<endl;
+			}
 
 		/*
 		cout <<"Num:"<<num;
@@ -128,7 +168,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		cout <<endl<< "continue (y/n)"<<endl;
 		cin.get(c);
 		*/
-			getchar();
+			//getchar();
 		}
 		catch(exception & e)
 		{
@@ -138,6 +178,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	
 	//num=getNum(myFile);
+	/*
 	RationalNumber oneFourth(1,4);
 	RationalNumber negOneFourth(1,-4);
 	RationalNumber oneFourth2(-1,-4);
@@ -158,7 +199,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << "Myint:"<<myint;
 
 	cout << "Myint2:"<<myint;
-	
+	*/
 	getchar();
 	return 0;
 }
