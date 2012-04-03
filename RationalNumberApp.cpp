@@ -11,27 +11,30 @@
 using namespace std;
 bool isIntChar(char );
 bool isWhiteSpaceChar(char);
-int getMyNum(istream& is,char delim,bool allowWS=false)  // deliminator is '/' or '\n' 
+bool delimFound(char,char);
+int getMyNum(istream& is,char delim,bool & emptyFlag,bool & delimFlag,bool allowWS=false)  // deliminator is '/' or '\n' 
 {
 	stringstream ss;
 	bool foundFirst=false;
+	delimFlag=false;  //ensure it starts out FALSE
 	char c='0';
 	int myNum=-99;
 	is>>ws;  // built in skip leading whitespace
-	while(is.get(c) &&  c!=delim)
+	while(is.get(c) &&  !(delimFlag=delimFound(c,delim))&& (c!='\n'))//c!=delim)
 		{
-			if((!foundFirst)	&& c=='-') //check for a leading negative
+			if((!foundFirst)&& c=='-') //check for a leading negative
 			{
 				ss<<c; //first char can b negative (-)
 				foundFirst=true;
-				is.get(c); //get next
+				//is.get(c); //get next
 			}
-			if(!isIntChar(c))
+			else if(!isIntChar(c))
 			{
-				if( allowWS && isWhiteSpaceChar(c))
-					;//cout << "Got intra ws"; // skip ignore is WS is allowed w/in the number, 12 3/456 => 123/456
-				else
+				if(!( allowWS && isWhiteSpaceChar(c)))
+				//	cout << "Got intra ws"; // skip ignore is WS is allowed w/in the number, 12 3/456 => 123/456
+				//else
 				{
+					//TODO do not strip \n
 					is.ignore(256,delim); // fails for >256 chars, okay by me
 					is.setstate(ios::failbit);
 				}
@@ -43,7 +46,19 @@ int getMyNum(istream& is,char delim,bool allowWS=false)  // deliminator is '/' o
 				ss<<c;
 			}
 		}
+	// get size
+	ss.seekg(0,ios::end);
+	int size=ss.tellg();
+	ss.seekg(0,ios::beg);
+	std::cout <<"count:"<<size;
+	std::cout <<"ssize:"<<ss.str().size();
+	if( size==0 ||(size=1 && ss.str()=="-")) // check for empty, or single '-'
+	{
+		emptyFlag=true;
+		std::cout << "empty value";
+	}
 		ss>> myNum;
+		
 		is.clear();
 		//is.ignore(256,delim); //clear
 	return myNum;
@@ -61,6 +76,10 @@ bool isWhiteSpaceChar(char c)
 {
 	return (c==' ' || c=='\t' || c=='\r');
 }
+bool delimFound(char c,char d)
+{
+	return (c==d);
+}
 void setSkipWs(istream& is)
 {
 	//is.setf(ios::skipws);
@@ -71,7 +90,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	//ifstream myFile("\goodFile.txt");
 	int num=0, denom=1;
 	char c='\n';
-	
+	bool emptyFlag=false;
+	bool delimFlag=false;
+	bool allowWS=true;
 	while(c!='n' || (!cin))
 	{
 		char divideBy='/';
@@ -80,16 +101,10 @@ int _tmain(int argc, _TCHAR* argv[])
 		
 		cout << "Enter rational number:";
 
-		num=getMyNum(cin,divideBy,true);
-		denom=getMyNum(cin,newline,true);
+		num=getMyNum(cin,divideBy,emptyFlag,delimFlag,allowWS);
+		denom=getMyNum(cin,newline,emptyFlag,delimFlag,allowWS);
 		cout <<"Num:"<<num;
 		cout <<"Denom:"<<denom;
-
-		//cin.clear();
-		// clear any lingering newlines
-		//cin.ignore(256,'\n');
-		//cout << endl;
-		//cin.ignore(256,'\n');
 		cout <<endl<< "continue (y/n)"<<endl;
 		cin.get(c);
 		
@@ -102,6 +117,21 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << oneFourth<<endl;
 	cout <<negOneFourth<<endl;
 	cout <<oneFourth2<<endl;
+	//test
+	stringstream myss('-');
+	int myint=0;
+	myss >> myint;
+	cout <<"myss:"<<myss.str();
+	cout << "Myint:"<<myint;
+	myss.clear();
+	myss.ignore(12,'\n');
+	
+	myss<<'-'<<'1';
+	myss>>myint;
+	cout << "Myint:"<<myint;
+
+	cout << "Myint2:"<<myint;
+	getchar();
 	getchar();
 	return 0;
 }
