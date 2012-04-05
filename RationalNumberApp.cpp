@@ -64,6 +64,7 @@ int getMyNum(istream& is,char delim,bool & emptyFlag,bool & delimFlag,bool allow
 					//TODO do not strip \n
 					is.ignore(256,delim); // fails for >256 chars, okay by me
 					is.setstate(ios::failbit);
+					delimFlag=true;
 				}
 				
 			}
@@ -90,10 +91,23 @@ int getMyNum(istream& is,char delim,bool & emptyFlag,bool & delimFlag,bool allow
 	
 	
 	ss>> myNum; //stuff result into an int
+	/*
+	if(is.fail()&& !allowWS) // kluge 12 3/345 doesnt => 12
+	{
+		cout <<"magic3"<<endl;
+		is.unget();
+		is.putback(delim);
+	}
+	*/
+	if(delim != sysEOL && is.peek()==sysEOL)  //kluge for 88/<LF>, otherwise grabs next line
+	{
+		cout <<"Magic2"<<endl;
+		is.unget();
+	}
+		
+	if(delim== sysEOL || c== sysEOL) // put back EOL or (c == sysEOL) kinda duplication
 	
-	//if(delim== sysEOL || c== sysEOL) // put back EOL or (c == sysEOL) kinda duplication
-	
-	if(c== sysEOL&&(emptyFlag&&delim==sysEOL)) // put back EOL or (c == sysEOL) kinda duplication
+	//if(c== sysEOL&&(emptyFlag&&delim==sysEOL)) // put back EOL or (c == sysEOL) kinda duplication
 		{
 			//cout<<"putting LF back"<<endl;
 			is.unget();
@@ -101,16 +115,16 @@ int getMyNum(istream& is,char delim,bool & emptyFlag,bool & delimFlag,bool allow
 		}
 		
 	//kluge
-	/*
+	
 	if( emptyFlag && delim == sysEOL) // check for empty, or single '-' for case of 7 <lf>, is.get(c) processed before delimFlag=delimFound...
 	{
 		is.unget();
 		delimFlag=true;
+		cout <<"Magic set flag"<<endl;
 		myNum=1;
 		
 	}
-	*/
-		
+	
 		is.clear(); //clear all flags
 		
 	return myNum;
@@ -132,21 +146,19 @@ bool delimFound(char c,char d)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	ifstream myFile("\good_input2.txt",ios::in|ios::binary);
+	//ifstream myFile("\good_input2.txt",ios::in|ios::binary);
+	ifstream myFile("\good_input2.txt");
 	if(!myFile)
 	{
 		cout << "Failed to open file";
 		getchar();
 		exit(1);
 	}
-	int num=0, denom=1; 
+	int num=0, denom=66; 
 	char c='\n';
 	char divideBy='/';
 	char newline='\n';
-	bool emptyFlagNum=false;
-	bool delimFlagNum=false;
-	bool emptyFlagDenom=false;
-	bool delimFlagDenom=false;
+	
 	bool allowWS=true;
 	//while(c!='n' || (!cin))
 
@@ -154,13 +166,16 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		myFile.unget(); //put char back into stream
 		//myFile.putback(c); //determine end of file w/ myFile.get(c), decrement get c
-		
+		bool emptyFlagNum=false;
+		bool delimFlagNum=false;
+		bool emptyFlagDenom=false;
+		bool delimFlagDenom=false;
 		
 		try
 		{
 			num=getMyNum(myFile,divideBy,emptyFlagNum,delimFlagNum,allowWS);
 			if(!delimFlagNum)
-				;//denom=1; // no '/' found set denom to 1, could be single digit if emptyFlagNum not empty
+				denom=1; // no '/' found set denom to 1, could be single digit if emptyFlagNum not empty
 			else
 				denom=getMyNum(myFile,newline,emptyFlagDenom,delimFlagDenom,allowWS);
 			
