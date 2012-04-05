@@ -32,31 +32,34 @@
 
 
 using namespace std;
+
 bool isIntChar(char );
 bool isWhiteSpaceChar(char);
 bool delimFound(char,char);
 const char sysEOL='\n';
+
 int getMyNum(istream& is,char delim,bool & emptyFlag,bool & delimFlag,bool allowWS=false)  // deliminator is '/' or '\n' 
 {
 	stringstream ss;
 	bool foundFirst=false;
 	delimFlag=false;  //ensure it starts out FALSE
 	char c='0';
-	int myNum=-99;
+	int myNum=-99; // init number
 	is>>ws;  // built in skip leading whitespace
-	while(is.get(c) &&  !(delimFlag=delimFound(c,delim))&& (c!=sysEOL))//c!=delim)
+	//while(is.get(c) &&  !(delimFlag=delimFound(c,delim)) && c!=sysEOL)//c!=delim)
+	while(is.get(c) &&  !(delimFlag=delimFound(c,delim)) && c!=sysEOL)//c!=delim)
 		{
+			//cout<<":"<<c<<":"<<endl;
+			//cout<<"!"<<is.tellg()<<"!"<<endl;
 			if((!foundFirst)&& c=='-') //check for a leading negative
 			{
 				ss<<c; //first char can b negative (-)
 				foundFirst=true;
-				//is.get(c); //get next
 			}
 			else if(!isIntChar(c))
 			{
-				if(!( allowWS && isWhiteSpaceChar(c)))
-				//	cout << "Got intra ws"; // skip ignore is WS is allowed w/in the number, 12 3/456 => 123/456
-				//else
+				if(!( allowWS && isWhiteSpaceChar(c))) // TODO could be combined w/ above if?
+				
 				{
 					//TODO do not strip \n
 					is.ignore(256,delim); // fails for >256 chars, okay by me
@@ -66,35 +69,53 @@ int getMyNum(istream& is,char delim,bool & emptyFlag,bool & delimFlag,bool allow
 			}
 			else
 			{
-				(!foundFirst?foundFirst=true:foundFirst=true);
+				foundFirst=true; //set found first, if no negative and 
 				ss<<c;
 			}
 		}
 	// get size
+	/*
 	ss.seekg(0,ios::end);
 	int size=ss.tellg();
 	ss.seekg(0,ios::beg);
-	//std::cout <<"count:"<<size;
-	//std::cout <<"ssize:"<<ss.str().size();
+	*/
+	int size=ss.str().size();
 	if( size==0 ||(size=1 && ss.str()=="-")) // check for empty, or single '-'
 	{
 		emptyFlag=true;
-		//std::cout << "empty value";
-	}
-		ss>> myNum;
-	// crazy put a \n if the delim is \n and it was stripped out failbit, causes fallover to next line
-	//if(delim==sysEOL&& is.fail())// does ignore w/ delim='/' strip '\n'?
-	if(is.fail())// does ignore w/ delim='/' strip '\n'?
-		is.putback(sysEOL);
 		
-	is.clear();
-		//is.ignore(256,delim); //clear
+	}
+	
+	
+	
+	
+	ss>> myNum; //stuff result into an int
+	
+	//if(delim== sysEOL || c== sysEOL) // put back EOL or (c == sysEOL) kinda duplication
+	
+	if(c== sysEOL&&(emptyFlag&&delim==sysEOL)) // put back EOL or (c == sysEOL) kinda duplication
+		{
+			//cout<<"putting LF back"<<endl;
+			is.unget();
+
+		}
+		
+	//kluge
+	/*
+	if( emptyFlag && delim == sysEOL) // check for empty, or single '-' for case of 7 <lf>, is.get(c) processed before delimFlag=delimFound...
+	{
+		is.unget();
+		delimFlag=true;
+		myNum=1;
+		
+	}
+	*/
+		
+		is.clear(); //clear all flags
+		
 	return myNum;
 }
-int getMyDenom(ifstream& is) // delim is '\n'
-{
-	return 0;
-}
+
 bool isIntChar(char c)
 {
 	//return (c=='0'||c=='1'||c=='2'||c=='3'||c=='4'||c=='5'||c=='6'||c=='7'||c=='8'||c=='9');
@@ -111,34 +132,42 @@ bool delimFound(char c,char d)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	ifstream myFile("\good_input2.txt");
+	ifstream myFile("\good_input2.txt",ios::in|ios::binary);
 	if(!myFile)
 	{
 		cout << "Failed to open file";
 		getchar();
 		exit(1);
 	}
-	int num=0, denom=1;
+	int num=0, denom=1; 
 	char c='\n';
+	char divideBy='/';
+	char newline='\n';
 	bool emptyFlagNum=false;
 	bool delimFlagNum=false;
 	bool emptyFlagDenom=false;
 	bool delimFlagDenom=false;
-	bool allowWS=false;
+	bool allowWS=true;
 	//while(c!='n' || (!cin))
 
-	while(myFile.get(c))
+	while(myFile.get(c) && !myFile.eof())//myFile.get(c))
 	{
-		myFile.putback(c); //determine end of file w/ myFile.get(c), decrement get c
-		char divideBy='/';
-		char newline='\n';
-		//cin.ignore(256,'\n');
+		myFile.unget(); //put char back into stream
+		//myFile.putback(c); //determine end of file w/ myFile.get(c), decrement get c
 		
-		//cout << "Enter rational number:";
+		
 		try
 		{
 			num=getMyNum(myFile,divideBy,emptyFlagNum,delimFlagNum,allowWS);
-			denom=getMyNum(myFile,newline,emptyFlagDenom,delimFlagDenom,allowWS);
+			if(!delimFlagNum)
+				;//denom=1; // no '/' found set denom to 1, could be single digit if emptyFlagNum not empty
+			else
+				denom=getMyNum(myFile,newline,emptyFlagDenom,delimFlagDenom,allowWS);
+			
+			cout<<"numDelim:"<<delimFlagNum<<"denomDelim:"<<delimFlagDenom<<endl;
+			cout<<"numEmpty:"<<emptyFlagNum<<"denomEmpty:"<<emptyFlagDenom<<endl;
+			cout <<"num:"<<num<<"denom:"<<denom<<endl;
+		
 			if(!denom)
 				throw runtime_error("Denominator=0");
 			// check empty Flag conditions
@@ -148,59 +177,31 @@ int _tmain(int argc, _TCHAR* argv[])
 				cout <<"Num:"<<num<<" "<<"Denom:"<<denom<<endl;
 				throw runtime_error("Empty error");
 			}
-			else if ((!emptyFlagNum&& emptyFlagDenom)&&!delimFlagNum&&!delimFlagDenom)  //num good, no /,denom missing, single digit? 7 valid, 7/ not valid
+			else if ((!emptyFlagNum&& emptyFlagDenom)&&!delimFlagNum&&delimFlagDenom)  //num good, no /,denom missing, single digit? 7 valid, 7/ not valid
 			{
 				denom=1; //set denom to 1, should print correctly
 				cout<<"numDelim:"<<delimFlagNum<<"denomDelim:"<<delimFlagDenom<<endl;
 				cout<<"numEmpty:"<<emptyFlagNum<<"denomEmpty:"<<emptyFlagDenom<<endl;
-				cout <<"Rational Number:"<< RationalNumber(num,denom)<<endl;
+				cout <<"Rational Number:Single Digit Found:"<< RationalNumber(num,denom)<<endl;
 			}
 			else
 			{
-				cout<<"numDelim:"<<delimFlagNum<<"denomDelim:"<<delimFlagDenom<<endl;
-				cout<<"numEmpty:"<<emptyFlagNum<<"denomEmpty:"<<emptyFlagDenom<<endl;
+				//cout<<"numDelim:"<<delimFlagNum<<"denomDelim:"<<delimFlagDenom<<endl;
+				//cout<<"numEmpty:"<<emptyFlagNum<<"denomEmpty:"<<emptyFlagDenom<<endl;
 				cout <<"Rational Number:"<< RationalNumber(num,denom)<<endl;
 			}
 
-		/*
-		cout <<"Num:"<<num;
-		cout <<"Denom:"<<denom;
-		cout <<endl<< "continue (y/n)"<<endl;
-		cin.get(c);
-		*/
-			//getchar();
 		}
 		catch(exception & e)
 		{
-			cout <<"exception caught"<<e.what()<<endl;
+			cout <<"Exception caught:"<<e.what()<<endl;
 		}
 		
 	}
 	
-	//num=getNum(myFile);
-	/*
-	RationalNumber oneFourth(1,4);
-	RationalNumber negOneFourth(1,-4);
-	RationalNumber oneFourth2(-1,-4);
-	cout << oneFourth<<endl;
-	cout <<negOneFourth<<endl;
-	cout <<oneFourth2<<endl;
-	//test
-	stringstream myss('-');
-	int myint=0;
-	myss >> myint;
-	cout <<"myss:"<<myss.str();
-	cout << "Myint:"<<myint;
-	myss.clear();
-	myss.ignore(12,'\n');
 	
-	myss<<'-'<<'1';
-	myss>>myint;
-	cout << "Myint:"<<myint;
-
-	cout << "Myint2:"<<myint;
-	*/
 	getchar();
+	myFile.close();
 	return 0;
 }
 
